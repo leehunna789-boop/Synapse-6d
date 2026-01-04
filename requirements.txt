@@ -8,3 +8,4 @@ setuptools
 soundfile
 matplotlib
 torch
+tensorflow
