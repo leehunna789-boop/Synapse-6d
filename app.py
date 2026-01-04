@@ -89,13 +89,13 @@ if user_msg:
         
         # 2. สร้างดนตรีสมจริงด้วย Music AI
         with st.spinner("กำลังสังเคราะห์ดนตรีที่เหมาะกับคุณ..."):
-            audio_wave, sr = st.session_state.music.synthesize_sound(v, a)
-                    # Mastering & Export
+         audio_wave, sr = st.session_state.music.synthesize_sound(v, a)
+        # Mastering & Export
         buf = io.BytesIO()
         
         # แปลง Tensor ให้เป็น Numpy Array (แก้ไขตรงนี้)
         if hasattr(audio_wave, 'numpy'):
-            audio_wave = audio_wave.numpy()
+         audio_wave = audio_wave.numpy()
             
         # คำนวณเพื่อปรับระดับเสียง
         audio_out = (audio_wave / np.max(np.abs(audio_wave)) * 32767).astype(np.int16)
@@ -103,5 +103,5 @@ if user_msg:
         # เขียนไฟล์เสียงลง Buffer
         wavfile.write(buf, sr, audio_out)
           
-            st.audio(buf, format="audio/wav")
-            st.caption(f"Mood Detected: {v} | Strategy: RLHF-Optimized")
+        st.audio(buf, format="audio/wav")
+        st.caption(f"Mood Detected: {v} | Strategy: RLHF-Optimized")
