@@ -1,13 +1,10 @@
-streamlit
+Streamlit
 google-generativeai
 slack_sdk
 numpy
 scipy
 gTTS
-setuptools
 soundfile
 matplotlib
 torch
-tensorflow
 transformers
-AutoModelForCausalLM
