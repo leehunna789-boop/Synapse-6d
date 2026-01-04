@@ -8,3 +8,4 @@ soundfile
 matplotlib
 torch
 transformers
+tensorflow
