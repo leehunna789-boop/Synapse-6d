@@ -1,1 +1,9 @@
-
+streamlit
+google-generativeai
+slack_sdk
+numpy
+scipy
+gTTS
+setuptools
+soundfile
+matplotlib
