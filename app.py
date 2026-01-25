@@ -103,11 +103,6 @@ if friend_files:
 # --- 3. ระบบเลือกเพลงและเล่นต่อเนื่อง ---
 if 'track_index' not in st.session_state:
     st.session_state.track_index = 0
-
-current_track = playlist[st.session_state.track_index]
-
-st.subheader(f"▶️ กำลังบรรเลง: {current_track['title']}")
-
 # --- 6. คลังเพลง (ดึงจาก GitHub) ---
 st.write("### 💿 รายการเพลงของ อยู่นิ้งๆไม่เจ็บตัว")
 music_files = [f for f in os.listdir('.') if f.endswith('.mp3')]
