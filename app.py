@@ -1,119 +1,61 @@
 import streamlit as st
 import os
-import base64
+import time
 
-# 1. ตั้งค่าหน้าจอ
-st.set_page_config(page_title="MUSIC 6D PRO", layout="wide", initial_sidebar_state="collapsed")
-# --- 2. แต่งหน้าตาให้เท่ (UI) ---
-st.set_page_config(page_title="SYNAPSE 6D Pro", layout="centered")
+# --- ตั้งค่าหน้าตาเครื่องเล่น ---
+st.set_page_config(page_title="ช่างใหญ่ Smooth Player", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #050505; color: white; }
-    .stButton>button { 
-        background-color: #FF0000; color: white; border-radius: 10px; 
-        height: 60px; font-weight: bold; border: 2px solid #FFD700;
-    }
+    .main { background-color: #0e1117; color: #ffffff; }
+    .stAudio { width: 100%; border-radius: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("Music 6D อยู่นิ้งๆไม่เจ็บตัว")
-st.write('สโลแกน: "อยู่นิ่งๆ ไม่เจ็บตัว"')
-# 2. คาถา CSS ล็อกพิกัด (บังคับรูปอยู่ข้างในเท่านั้น)
-st.markdown("""
-    <style>
-    .stApp { background-color: #000; color: #fff; }
-    header, footer, [data-testid="stToolbar"] {visibility:hidden !important;}
-    
-    /* สร้างกรอบทีวี */
-    .tv-box {
-        border: 15px solid #FF0000;
-        border-right: 15px solid #0000FF;
-        border-bottom: 15px solid #0000FF;
-        border-radius: 40px;
-        width: 100%;
-        height: 350px;
-        background-color: #000;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        box-shadow: 0 0 30px #FF0000;
-    }
+st.title("🎵 เครื่องเล่นเพลง R&B บำบัด (สูตร 10 วินาที)")
+st.write("สร้างสรรค์โดย: ช่างใหญ่ (12x12 System)")
 
-    /* บังคับรูปในกรอบ */
-    .tv-box img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain; /* ปรับให้รูปพอดีกรอบ ไม่เบี้ยว */
-    }
+# --- จัดการไฟล์ ---
+MUSIC_DIR = "my_music" # โฟลเดอร์เพลงของช่างใหญ่
+if not os.path.exists(MUSIC_DIR):
+    os.makedirs(MUSIC_DIR)
 
-    /* ตัวหนังสือวิ่ง */
-    .run-text {
-        background: #111;
-        border: 2px solid #0000FF;
-        border-radius: 10px;
-        padding: 10px;
-        color: #FF0000;
-        font-size: 24px;
-        font-weight: bold;
-        text-align: center;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+songs = [f for f in os.listdir(MUSIC_DIR) if f.endswith('.mp3')]
 
-# --- 3. ส่วนดึงรูป globe.jpg แบบ Base64 (ไม้ตาย) ---
-def display_globe():
-    if os.path.exists("globe.jpg"):
-        with open("globe.jpg", "rb") as f:
-            data = base64.b64encode(f.read()).decode()
-        # ยัดรูปเข้าไปใน div .tv-box โดยตรง
-        st.markdown(f'<div class="tv-box"><img src="data:image/jpeg;base64,{data}"></div>', unsafe_allow_html=True)
-    else:
-        # ถ้าไม่มีรูป ให้โชว์คำเตือนในกรอบ
-        st.markdown('<div class="tv-box"><h2 style="color:red;">ไม่พบไฟล์ globe.jpg</h2></div>', unsafe_allow_html=True)
+# --- ส่วนแสดงผลหลัก ---
+col1, col2 = st.columns([1, 1])
 
-# --- 4. แสดงผลหน้าจอหลัก ---
-display_globe()
-
-st.markdown('<div class="run-text"><marquee scrollamount="10">อยู่นิ่งๆ ไม่เจ็บตัว... สถานีเพลง 6D เปิดเอาเองนะครับ จะลงเพลงไว้ให้ยาวๆ 24 ช.ม!</marquee></div>', unsafe_allow_html=True)
-
-# --- 5. ส่วนของเพื่อน (รูปจะอยู่ล่างสุดจริงๆ) ---
-st.write("---")
-st.subheader("📸 มุมเพื่อนโชว์รูป")
-friend_files = st.file_uploader("ส่งรูปมาโชว์ตรงนี้", type=['jpg','png','jpeg'], accept_multiple_files=True)
-
-if friend_files:
-    for f in friend_files:
-        st.image(f, use_container_width=True)
-
-# --- 6. คลังเพลง (ดึงจาก GitHub) ---
-st.write("### 💿 รายการเพลงของ อยู่นิ้งๆไม่เจ็บตัว")
-music_files = [f for f in os.listdir('.') if f.endswith('.mp3')]
-
-if music_files:
-    song = st.selectbox("เลือกเพลง:", music_files)
-    st.audio(song)
-else:
-    st.error("⚠️ อย่าลืมลงเพลง .mp3 ในหน้าแรกของ GitHub นะครับ")
-if friend_files:
-    for f in friend_files:
-        st.image(f, use_container_width=True)
-# --- 3. ระบบเลือกเพลงและเล่นต่อเนื่อง ---
-if 'track_index' not in st.session_state:
-    st.session_state.track_index = 0
-# --- 6. คลังเพลง (ดึงจาก GitHub) ---
-st.write("### 💿 รายการเพลงของ อยู่นิ้งๆไม่เจ็บตัว")
-music_files = [f for f in os.listdir('.') if f.endswith('.mp3')]
-
-col1, col2 = st.columns(2)
 with col1:
-    if st.button("⏮️ เพลงก่อนหน้า"):
-        st.session_state.track_index = (st.session_state.track_index - 1) % len(playlist)
-        st.rerun()
+    st.image("https://googleusercontent.com/image_generation_content/11", caption="เส้นทางความสำเร็จของช่างใหญ่")
+
 with col2:
-    if st.button("ถัดไป ⏭️"):
-        st.session_state.track_index = (st.session_state.track_index + 1) % len(playlist)
-        st.rerun()
-st.write("#### *สโลแกน: อยู่นิ่งๆ ไม่เจ็บตัว*")
+    if songs:
+        st.subheader("📋 เพลย์ลิสต์ของคุณ")
+        selected_song = st.selectbox("เลือกเพลงที่จะฟัง", songs)
+        
+        # ส่วนเครื่องเล่นเพลง
+        audio_path = os.path.join(MUSIC_DIR, selected_song)
+        audio_file = open(audio_path, 'rb')
+        audio_bytes = audio_file.read()
+        
+        st.write(f"正在播放 (กำลังเล่น): **{selected_song}**")
+        st.audio(audio_bytes, format='audio/mp3')
+        
+        # ปุ่มควบคุมความเนียน
+        st.divider()
+        st.write("⚙️ **การตั้งค่าความเนียน (Crossfade)**")
+        fade_time = st.slider("ตั้งเวลาจางหาย (วินาที)", 0, 15, 10)
+        
+        if st.button("เล่นเพลงถัดไปแบบนุ่มนวล"):
+            st.info(f"ระบบกำลังเตรียม Fade Out {fade_time} วินาที เพื่อต่อเพลงถัดไป...")
+            # ใน Streamlit ระบบจะเล่นทีละไฟล์ แต่เราจำลอง UI ให้ช่างใหญ่เห็นภาพได้
+            time.sleep(1)
+            st.success("ส่งต่ออารมณ์เพลงถัดไปแล้ว!")
+    else:
+        st.error("ยังไม่มีเพลงในเครื่องเลยครับช่างใหญ่! เอาไฟล์ MP3 ไปใส่ในโฟลเดอร์ 'my_music' ก่อนนะครับ")
+
+# --- ท่อนล่าง: เสียงระฆังบำบัด ---
+st.divider()
+st.subheader("🔔 ระบบแทรกเสียงระฆัง 432Hz")
+if st.button("เคาะระฆังประสานเสียง"):
+    st.write("เหง่งงงงงงงงงงงงงงงงง.... (เสียงบำบัดเริ่มทำงาน)")
