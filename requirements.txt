@@ -14,7 +14,6 @@ librosa
 edge-tts
 praat-parselmouth
 
-streamlit
-requests
+
 
 
