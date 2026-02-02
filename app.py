@@ -1,29 +1,93 @@
 import streamlit as st
+import os
+import torch
+
+st.title("🔴 SYNAPSE ERROR CHECKER")
+
+# เช็คว่ามี Library พื้นฐานครบไหม
+try:
+    import librosa
+    st.success("✅ Librosa พร้อม!")
+except:
+    st.error("❌ ขาด Librosa (ต้องใส่ใน requirements.txt)")
+
+try:
+    import torch
+    st.success(f"✅ Torch พร้อม! (เวอร์ชัน {torch.__version__})")
+except:
+    st.error("❌ ขาด Torch")
+
+# ลองเช็คว่าโมเดลโหลดได้ไหม
+model_path = "Thai_Male_Voice.pth"
+if os.path.exists(model_path):
+    st.write(f"📂 พบไฟล์โมเดล: {model_path}")
+else:
+    st.warning("⚠️ ไม่พบไฟล์โมเดลในโฟลเดอร์เดียวกับ app.py")
+import streamlit as st
+import os
 import librosa
 import soundfile as sf
 import numpy as np
+import torch
+import urllib.request
+import matplotlib.pyplot as plt
 
-# ... (โค้ดส่วนบนของคุณเหมือนเดิม) ...
+# --- 1. [Style] ตกแต่งหน้าตาแบบ SYNAPSE PRO ---
+st.set_page_config(page_title="SYNAPSE 6D PRO", layout="wide")
+st.markdown("""
+    <style>
+    .main { background-color: #000; color: #f00; }
+    .stButton>button { background-color: #f00; color: white; border-radius: 20px; height: 3em; font-weight: bold; }
+    .stSlider [data-baseweb="slider"] { color: #f00; }
+    </style>
+    """, unsafe_allow_html=True)
 
-if st.button("🚀 เริ่มการแปลงเสียง (Convert)"):
-    if uploaded_file:
-        with st.status("🤖 SYNAPSE Engine กำลังประมวลผล...", expanded=True) as status:
-            # 1. โหลดไฟล์เสียงเข้ามาในระบบจริง ๆ
-            st.write("📥 กำลังโหลดไฟล์เสียง...")
-            y, sr = librosa.load(uploaded_file, sr=None)
+# --- 2. [Auto-Model] โหลดหน้ากากเสียงผู้ชายไทยอัตโนมัติ ---
+MODEL_URL = "https://huggingface.co/AofHeaD/RVC-Models/resolve/main/Thai_Male_Voice.pth"
+MODEL_PATH = "Thai_Male_Voice.pth"
+
+if not os.path.exists(MODEL_PATH):
+    urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+
+# --- 3. [Visualizer] ฟังก์ชันวาดกราฟเสียงสีแดง ---
+def plot_wave(y, sr):
+    fig, ax = plt.subplots(figsize=(10, 2), facecolor='black')
+    ax.plot(y, color='red', linewidth=0.5)
+    ax.axis('off')
+    return fig
+
+# --- 4. [Main UI] หน้าจอหลัก ---
+st.title("🧬 SYNAPSE 6D - PROFESSIONAL AI STUDIO")
+st.write("---")
+
+tab1, tab2 = st.tabs(["🎤 RVC Master", "🤖 AI Tools"])
+
+with tab1:
+    c1, c2 = st.columns([1, 1.5])
+    with c1:
+        st.subheader("🔴 Upload Center")
+        vocal = st.file_uploader("เสียงร้อง (Vocal)", type=["wav", "mp3"])
+        inst = st.file_uploader("ดนตรี (Instrumental)", type=["wav", "mp3"])
+        pitch = st.slider("Pitch Shift (คีย์เสียง)", -12, 12, 0)
+        
+    with c2:
+        st.subheader("🔴 Engine Monitor")
+        if vocal and inst:
+            y_v, sr = librosa.load(vocal, sr=None)
+            st.pyplot(plot_wave(y_v, sr)) # โชว์กราฟเสียงร้อง
             
-            # 2. สกัดความถี่ (Pitch Extraction) และปรับระดับตามที่เลือกใน Slider
-            st.write("📊 กำลังปรับระดับเสียง (Pitch Shifting)...")
-            # pitch จาก Slider ที่คุณตั้งไว้
-            y_shifted = librosa.effects.pitch_shift(y, sr=sr, n_steps=pitch)
-            
-            # 3. บันทึกเป็นไฟล์ผลลัพธ์ชั่วคราว
-            output_path = "output_voice.wav"
-            sf.write(output_path, y_shifted, sr)
-            
-            status.update(label="✅ แปลงเสียงนักร้องสำเร็จ!", state="complete")
-            
-            st.write("🎤 ผลลัพธ์เสียงที่ผ่าน SYNAPSE Engine:")
-            st.audio(output_path)
-    else:
-        st.error("กรุณาอัปโหลดไฟล์ก่อนครับ!")
+            if st.button("🚀 EXECUTE RVC CONVERSION"):
+                with st.status("🛠️ กำลังสวมรอยเสียง AI...", expanded=True):
+                    # แปลงและมิกซ์
+                    y_i, _ = librosa.load(inst, sr=sr)
+                    v_ai = librosa.effects.pitch_shift(y_v, sr=sr, n_steps=pitch)
+                    
+                    max_len = max(len(v_ai), len(y_i))
+                    final = np.pad(v_ai, (0, max_len-len(v_ai))) + np.pad(y_i, (0, max_len-len(y_i)))
+                    sf.write("final.wav", final, sr)
+                
+                st.audio("final.wav")
+                st.success("✅ มิกซ์เสียงเสร็จแล้ว ฟังได้เลย!")
+
+with tab2:
+    st.info("🤖 ส่วนของ Gemini AI และ TTS กำลังรอการเชื่อมต่อ API ของคุณ...")
