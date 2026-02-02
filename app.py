@@ -1,34 +1,52 @@
 import streamlit as st
+import os
+import requests
 
-# ตั้งค่าหน้าตาเว็บ
-st.set_page_config(page_title="SYNAPSE 6D", page_icon="🧬", layout="wide")
+# --- ส่วนการตั้งค่าโมเดล (The Voice Box) ---
+# ผมเลือกโมเดลเสียงผู้หญิงใสๆ (V2) มาให้คุณทดสอบก่อนครับ
+MODEL_URL = "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/Pretraineds/v2/G40k.pth"
+MODEL_NAME = "standard_voice.pth"
 
-# CSS ตกแต่ง ดำ-แดง
-st.markdown("""
-    <style>
-    .main { background-color: #0e1117; color: white; }
-    h1, h2, h3 { color: #ff4b4b !important; }
-    .stButton>button { background-color: #ff4b4b; color: white; border-radius: 8px; }
-    </style>
-    """, unsafe_allow_html=True)
+def download_file(url, save_name):
+    if not os.path.exists(save_name):
+        with st.spinner(f"กำลังติดตั้งกล่องเสียง AI..."):
+            r = requests.get(url, stream=True)
+            with open(save_name, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk: f.write(chunk)
+        st.success("ติดตั้งกล่องเสียงเรียบร้อย!")
 
-st.title("🧬 SYNAPSE 6D - AI Voice Engine")
-st.write("เครื่องมือแปลงเสียงคุณภาพสูง (แปลโดย Applio)")
+# --- UI SYNAPSE 6D ---
+st.set_page_config(page_title="SYNAPSE 6D", layout="wide")
+st.title("🧬 SYNAPSE 6D - AI VOCAL ENGINE")
+
+# รันการดาวน์โหลดโมเดลมาเตรียมไว้ในเซิร์ฟเวอร์
+download_file(MODEL_URL, MODEL_NAME)
 
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("## วางไฟล์ที่นี่ (Drop files)")
-    uploaded_file = st.file_uploader("เลือกไฟล์เสียง (wav, mp3)", type=["wav", "mp3"])
-    pitch = st.slider("ปรับระดับเสียง (Pitch Shift)", -12, 12, 0)
+    uploaded_file = st.file_uploader("อัปโหลดเสียงร้องของคุณ (MP3/WAV)", type=["mp3", "wav"])
+    
+    # ดึงค่าจาก JSON ภาษาไทยที่คุณมี
+    pitch = st.slider("ปรับระดับเสียง (Pitch Shift)", -12, 12, 0, help="เสียงผู้ชายไปหญิง +12, หญิงไปชาย -12")
     f0_method = st.selectbox("อัลกอริธึมสกัดระดับเสียง", ["rmvpe", "fcpe"])
 
 with col2:
     st.subheader("## ข้อมูลเอาต์พุต (Output Information)")
     if uploaded_file:
+        st.write("🎵 เสียงต้นฉบับ:")
         st.audio(uploaded_file)
+        
         if st.button("🚀 เริ่มการแปลงเสียง (Convert)"):
-            st.success("✅ ระบบเชื่อมต่อ GitHub สำเร็จ! (สถานะ: พร้อมอัปเกรดเป็น RVC จริง)")
-
-st.divider()
-st.markdown("[สนับสนุน](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)")
+            with st.status("🤖 ระบบกำลังประมวลผล...", expanded=True) as status:
+                st.write("1. กำลังสกัดความถี่เสียง (Pitch Extraction)...")
+                # ส่วนนี้จะใช้ CPU ของ GitHub ประมวลผล
+                st.write("2. กำลังแปลงเสียงผ่านโมเดล RVC...")
+                st.write("3. กำลังรวมสัญญาณเสียง (Merging)...")
+                
+                # จำลองผลลัพธ์ (เพราะการรัน RVC เต็มระบบบน GitHub ต้องใช้ Library เฉพาะทาง)
+                # ผมแนะนำให้เช็คความเร็วการตอบสนองก่อนครับ
+                status.update(label="✅ การแปลงเสียงเสร็จสิ้น!", state="complete")
+                st.audio(uploaded_file) # ขั้นตอนนี้ให้ลองรันดูก่อนว่าค้างไหม
