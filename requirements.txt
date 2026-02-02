@@ -11,4 +11,6 @@ transformers
 tensorflow
 requests
 librosa
+edge-tts
+praat-parselmouth
 
