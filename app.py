@@ -50,7 +50,7 @@ class VideoCard(ctk.CTkFrame):
         eq_label_frame.pack(pady=10, padx=10, fill="x")
         
         self.sliders = []
-        bands = [".ต่ำ.", "ต่ำกลาง", ".กลาง.", "สูงกลาง", ".สูง."]
+        bands = [".ต่ำ.", "ต่ำกลาาง", ".กลาง.", "สูงกลาง", ".สูง."]
         for b in bands:
             unit = ctk.CTkFrame(eq_label_frame, fg_color="transparent")
             unit.pack(side="left", expand=True, pady=10)
