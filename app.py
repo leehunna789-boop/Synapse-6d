@@ -1,93 +1,104 @@
-import streamlit as st
-import os
-import torch
+import customtkinter as ctk
 
-st.title("🔴 SYNAPSE ERROR CHECKER")
+class ScrollingText(ctk.CTkFrame):
+    """แถบตัวหนังสือวิ่งสีสดใส"""
+    def __init__(self, master, text, color, **kwargs):
+        super().__init__(master, fg_color=color, height=35, **kwargs)
+        self.text = f" {text}          " * 10
+        self.label = ctk.CTkLabel(self, text=self.text, font=("Arial", 14, "bold"), text_color="white")
+        self.label.place(x=0, y=5)
+        self.x_pos = 0
+        self.animate()
 
-# เช็คว่ามี Library พื้นฐานครบไหม
-try:
-    import librosa
-    st.success("✅ Librosa พร้อม!")
-except:
-    st.error("❌ ขาด Librosa (ต้องใส่ใน requirements.txt)")
+    def animate(self):
+        self.x_pos -= 2
+        if self.x_pos < -500: self.x_pos = 0
+        self.label.place(x=self.x_pos, y=5)
+        self.after(30, self.animate)
 
-try:
-    import torch
-    st.success(f"✅ Torch พร้อม! (เวอร์ชัน {torch.__version__})")
-except:
-    st.error("❌ ขาด Torch")
-
-# ลองเช็คว่าโมเดลโหลดได้ไหม
-model_path = "Thai_Male_Voice.pth"
-if os.path.exists(model_path):
-    st.write(f"📂 พบไฟล์โมเดล: {model_path}")
-else:
-    st.warning("⚠️ ไม่พบไฟล์โมเดลในโฟลเดอร์เดียวกับ app.py")
-import streamlit as st
-import os
-import librosa
-import soundfile as sf
-import numpy as np
-import torch
-import urllib.request
-import matplotlib.pyplot as plt
-
-# --- 1. [Style] ตกแต่งหน้าตาแบบ SYNAPSE PRO ---
-st.set_page_config(page_title="SYNAPSE 6D PRO", layout="wide")
-st.markdown("""
-    <style>
-    .main { background-color: #000; color: #f00; }
-    .stButton>button { background-color: #f00; color: white; border-radius: 20px; height: 3em; font-weight: bold; }
-    .stSlider [data-baseweb="slider"] { color: #f00; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 2. [Auto-Model] โหลดหน้ากากเสียงผู้ชายไทยอัตโนมัติ ---
-MODEL_URL = "https://huggingface.co/AofHeaD/RVC-Models/resolve/main/Thai_Male_Voice.pth"
-MODEL_PATH = "Thai_Male_Voice.pth"
-
-if not os.path.exists(MODEL_PATH):
-    urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
-
-# --- 3. [Visualizer] ฟังก์ชันวาดกราฟเสียงสีแดง ---
-def plot_wave(y, sr):
-    fig, ax = plt.subplots(figsize=(10, 2), facecolor='black')
-    ax.plot(y, color='red', linewidth=0.5)
-    ax.axis('off')
-    return fig
-
-# --- 4. [Main UI] หน้าจอหลัก ---
-st.title("🧬 SYNAPSE 6D - PROFESSIONAL AI STUDIO")
-st.write("---")
-
-tab1, tab2 = st.tabs(["🎤 RVC Master", "🤖 AI Tools"])
-
-with tab1:
-    c1, c2 = st.columns([1, 1.5])
-    with c1:
-        st.subheader("🔴 Upload Center")
-        vocal = st.file_uploader("เสียงร้อง (Vocal)", type=["wav", "mp3"])
-        inst = st.file_uploader("ดนตรี (Instrumental)", type=["wav", "mp3"])
-        pitch = st.slider("Pitch Shift (คีย์เสียง)", -12, 12, 0)
+class VideoCard(ctk.CTkFrame):
+    """จอวิดีโอ + แผงควบคุมจัดเต็ม"""
+    def __init__(self, master, platform, **kwargs):
+        super().__init__(master, **kwargs)
         
-    with c2:
-        st.subheader("🔴 Engine Monitor")
-        if vocal and inst:
-            y_v, sr = librosa.load(vocal, sr=None)
-            st.pyplot(plot_wave(y_v, sr)) # โชว์กราฟเสียงร้อง
-            
-            if st.button("🚀 EXECUTE RVC CONVERSION"):
-                with st.status("🛠️ กำลังสวมรอยเสียง AI...", expanded=True):
-                    # แปลงและมิกซ์
-                    y_i, _ = librosa.load(inst, sr=sr)
-                    v_ai = librosa.effects.pitch_shift(y_v, sr=sr, n_steps=pitch)
-                    
-                    max_len = max(len(v_ai), len(y_i))
-                    final = np.pad(v_ai, (0, max_len-len(v_ai))) + np.pad(y_i, (0, max_len-len(y_i)))
-                    sf.write("final.wav", final, sr)
-                
-                st.audio("final.wav")
-                st.success("✅ มิกซ์เสียงเสร็จแล้ว ฟังได้เลย!")
+        # หัวข้อ
+        ctk.CTkLabel(self, text=f"แผงควบคุม {platform}", font=("Arial", 18, "bold")).pack(pady=5)
 
-with tab2:
-    st.info("🤖 ส่วนของ Gemini AI และ TTS กำลังรอการเชื่อมต่อ API ของคุณ...")
+        # 1. ช่องใส่ลิงก์ + ปุ่มโหลด (เพิ่มลูกเล่น)
+        input_frame = ctk.CTkFrame(self, fg_color="transparent")
+        input_frame.pack(pady=5, fill="x", padx=10)
+        self.url_entry = ctk.CTkEntry(input_frame, placeholder_text=f"วางลิงก์ {platform} ตรงนี้...", width=250)
+        self.url_entry.pack(side="left", padx=5)
+        ctk.CTkButton(input_frame, text="โหลด", width=60, fg_color="gray").pack(side="left")
+
+        # 2. จอวิดีโอจำลอง
+        self.screen = ctk.CTkFrame(self, width=450, height=250, fg_color="black", border_width=2, border_color="#333")
+        self.screen.pack(pady=10, padx=10)
+        ctk.CTkLabel(self.screen, text="[ SCREEN ]", text_color="#555", font=("Arial", 20)).place(relx=0.5, rely=0.5, anchor="center")
+
+        # 3. ปุ่มควบคุมเครื่องเล่น (Media Controls)
+        control_btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        control_btn_frame.pack(pady=5)
+        ctk.CTkButton(control_btn_frame, text="◀◀", width=40).pack(side="left", padx=2)
+        ctk.CTkButton(control_btn_frame, text="PLAY", width=60, fg_color="green").pack(side="left", padx=2)
+        ctk.CTkButton(control_btn_frame, text="PAUSE", width=60, fg_color="orange").pack(side="left", padx=2)
+        ctk.CTkButton(control_btn_frame, text="STOP", width=60, fg_color="red").pack(side="left", padx=2)
+        ctk.CTkButton(control_btn_frame, text="▶▶", width=40).pack(side="left", padx=2)
+
+        # 4. แผง EQ 5 ปุ่ม (ต่ำ -> สูง)
+        eq_label_frame = ctk.CTkFrame(self, fg_color="#222")
+        eq_label_frame.pack(pady=10, padx=10, fill="x")
+        
+        self.sliders = []
+        bands = [".ต่ำ.", "ต่ำกลาง", ".กลาง.", "สูงกลาง", ".สูง."]
+        for b in bands:
+            unit = ctk.CTkFrame(eq_label_frame, fg_color="transparent")
+            unit.pack(side="left", expand=True, pady=10)
+            s = ctk.CTkSlider(unit, orientation="vertical", width=20, height=100)
+            s.set(0)
+            s.pack()
+            self.sliders.append(s)
+            ctk.CTkLabel(unit, text=b, font=("Arial", 10)).pack()
+
+        # 5. ปุ่มทางลัดเสียง (Presets)
+        preset_frame = ctk.CTkFrame(self, fg_color="transparent")
+        preset_frame.pack(pady=5)
+        ctk.CTkButton(preset_frame, text="Bass Boost", size=(80, 25), command=self.set_bass).pack(side="left", padx=5)
+        ctk.CTkButton(preset_frame, text="Rock", size=(80, 25), command=self.set_rock).pack(side="left", padx=5)
+        ctk.CTkButton(preset_frame, text="Reset", size=(80, 25), fg_color="gray", command=self.reset_eq).pack(side="left", padx=5)
+
+    def set_bass(self):
+        vals = [80, 40, 0, -20, -40]
+        for s, v in zip(self.sliders, vals): s.set(v)
+
+    def set_rock(self):
+        vals = [60, -20, 40, -20, 60]
+        for s, v in zip(self.sliders, vals): s.set(v)
+
+    def reset_eq(self):
+        for s in self.sliders: s.set(0)
+
+class FullApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Super Media Equalizer - จัดเต็มลูกเล่น")
+        self.geometry("580x900")
+
+        self.scroll = ctk.CTkScrollableFrame(self)
+        self.scroll.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # รายการคั่นด้วยตัวหนังสือวิ่ง
+        configs = [
+            ("YOUTUBE", "red", "● LIVE FROM YOUTUBE CHANNEL ●"),
+            ("TIKTOK", "black", "● LATEST TIKTOK FEED ●"),
+            ("FACEBOOK", "blue", "● FACEBOOK VIDEO POSTS ●"),
+            ("LINE VOOM", "green", "● LINE VOOM CONTENT ●")
+        ]
+
+        for platform, color, msg in configs:
+            ScrollingText(self.scroll, text=msg, color=color).pack(fill="x", pady=(15, 0))
+            VideoCard(self.scroll, platform=platform, border_width=1, border_color="#555").pack(pady=(0, 20), padx=5, fill="x")
+
+if __name__ == "__main__":
+    app = FullApp()
+    app.mainloop()
