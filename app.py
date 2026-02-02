@@ -4,111 +4,65 @@ import librosa
 import soundfile as sf
 import numpy as np
 import torch
-import pickle
+import urllib.request
 import matplotlib.pyplot as plt
 
-import urllib.request
-
-# ฟังก์ชันแอบดาวน์โหลดโมเดลมาให้ใช้อัตโนมัติ
-def auto_download_model():
-    model_url = "https://huggingface.co/AofHeaD/RVC-Models/resolve/main/Thai_Male_Voice.pth"
-    model_path = "Thai_Male_Voice.pth"
-    
-    if not os.path.exists(model_path):
-        with st.spinner("📦 ระบบกำลังติดตั้ง 'หน้ากากเสียงผู้ชายไทย' ให้คุณฟรี... (รอสักครู่)"):
-            try:
-                urllib.request.urlretrieve(model_url, model_path)
-                st.success("✅ ติดตั้งหน้ากากเสียงสำเร็จ!")
-            except:
-                st.error("❌ ดาวน์โหลดไม่สำเร็จ โปรดเช็คอินเทอร์เน็ต")
-
-# เรียกใช้งานทันที
-auto_download_model()
-
-# --- 1. ตั้งค่าหน้าตาและธีม (Black & Red) ---
+# --- 1. [Style] ตกแต่งหน้าตาแบบ SYNAPSE PRO ---
 st.set_page_config(page_title="SYNAPSE 6D PRO", layout="wide")
 st.markdown("""
     <style>
-    .main { background-color: #000000; color: #ff0000; }
-    h1, h2, h3 { color: #ff0000 !important; font-family: 'Courier New', monospace; text-shadow: 2px 2px #550000; }
-    .stButton>button { background-color: #ff0000; color: white; width: 100%; font-weight: bold; border-radius: 10px; border: none; }
-    .stTextInput>div>div>input { background-color: #1a1a1a; color: #ff0000; border: 1px solid #ff0000; }
-    [data-testid="stHeader"] { background: rgba(0,0,0,0); }
+    .main { background-color: #000; color: #f00; }
+    .stButton>button { background-color: #f00; color: white; border-radius: 20px; height: 3em; font-weight: bold; }
+    .stSlider [data-baseweb="slider"] { color: #f00; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. ฟังก์ชันตรวจสอบไฟล์ .pth (ที่คุณส่งมาตอนแรก) ---
-def display_model_info(file_path):
-    if not file_path or file_path == "ไม่พบไฟล์ .pth":
-        return
-    st.subheader("## 🔍 ข้อมูลโมเดล (Model Insight)")
-    try:
-        # ใช้ torch.load ตามสคริปต์ PyData Viewer ของคุณ
-        checkpoint = torch.load(file_path, map_location='cpu')
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
-            st.write(f"**📦 ชื่อไฟล์:** `{os.path.basename(file_path)}`")
-            if isinstance(checkpoint, dict) and 'epoch' in checkpoint:
-                st.write(f"**⏳ ฝึกฝนมาแล้ว:** {checkpoint['epoch']} Epochs")
-        with col_m2:
-            st.success("✅ โครงสร้างไฟล์ถูกต้อง พร้อมใช้งาน")
-    except Exception as e:
-        st.warning(f"ℹ️ อ่าน Metadata ไม่ได้ (อาจเป็นโมเดลแบบ Index): {e}")
+# --- 2. [Auto-Model] โหลดหน้ากากเสียงผู้ชายไทยอัตโนมัติ ---
+MODEL_URL = "https://huggingface.co/AofHeaD/RVC-Models/resolve/main/Thai_Male_Voice.pth"
+MODEL_PATH = "Thai_Male_Voice.pth"
 
-# --- 3. ฟังก์ชันวาดกราฟเสียง ---
-def plot_waveform(data, sr, title="Waveform"):
-    fig, ax = plt.subplots(figsize=(10, 2.5), facecolor='black')
-    ax.plot(np.linspace(0, len(data)/sr, len(data)), data, color='#ff0000', linewidth=0.7)
-    ax.set_title(title, color='white', size=10)
+if not os.path.exists(MODEL_PATH):
+    urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+
+# --- 3. [Visualizer] ฟังก์ชันวาดกราฟเสียงสีแดง ---
+def plot_wave(y, sr):
+    fig, ax = plt.subplots(figsize=(10, 2), facecolor='black')
+    ax.plot(y, color='red', linewidth=0.5)
     ax.axis('off')
     return fig
 
-# --- 4. หน้าจอหลัก ---
-st.title("🧬 SYNAPSE 6D - AI VOCAL ENGINE")
+# --- 4. [Main UI] หน้าจอหลัก ---
+st.title("🧬 SYNAPSE 6D - PROFESSIONAL AI STUDIO")
 st.write("---")
 
-col1, col2 = st.columns([1, 1.2])
+tab1, tab2 = st.tabs(["🎤 RVC Master", "🤖 AI Tools"])
 
-with col1:
-    st.subheader("🔴 ตั้งค่าแหล่งเสียง")
-    vocal_file = st.file_uploader("1. อัปโหลดเสียงร้องเพียวๆ", type=["wav", "mp3"])
-    inst_file = st.file_uploader("2. อัปโหลดดนตรีเพียวๆ", type=["wav", "mp3"])
-    
-    # ดึงไฟล์ .pth ในโฟลเดอร์มาโชว์ (ตามโปรเจกต์คุณ)
-    model_files = [f for f in os.listdir(".") if f.endswith(".pth")]
-    selected_model = st.selectbox("เลือกโมเดลศิลปิน (.pth):", model_files if model_files else ["ไม่พบไฟล์ .pth"])
-    
-    # แสดงข้อมูลโมเดลทันทีที่เลือก
-    if selected_model != "ไม่พบไฟล์ .pth":
-        display_model_info(selected_model)
-    
-    pitch = st.slider("ปรับโทนเสียง (Pitch Shift)", -12, 12, 0)
-
-with col2:
-    st.subheader("🔴 การประมวลผลและแสดงผล")
-    if vocal_file and inst_file:
-        # วิเคราะห์เสียงต้นฉบับ
-        y_v, sr = librosa.load(vocal_file, sr=None)
-        st.pyplot(plot_waveform(y_v, sr, "Original Vocal Visualizer"))
+with tab1:
+    c1, c2 = st.columns([1, 1.5])
+    with c1:
+        st.subheader("🔴 Upload Center")
+        vocal = st.file_uploader("เสียงร้อง (Vocal)", type=["wav", "mp3"])
+        inst = st.file_uploader("ดนตรี (Instrumental)", type=["wav", "mp3"])
+        pitch = st.slider("Pitch Shift (คีย์เสียง)", -12, 12, 0)
         
-        if st.button("🚀 EXECUTE SYNAPSE ENGINE"):
-            with st.status("⚙️ กำลังแปลงเสียงและมิกซ์เพลง...", expanded=True) as status:
-                # 1. แปลงเสียง (Pitch Shift Simulation)
-                v_transformed = librosa.effects.pitch_shift(y_v, sr=sr, n_steps=pitch)
-                
-                # 2. โหลดดนตรีและมิกซ์
-                y_i, _ = librosa.load(inst_file, sr=sr)
-                max_len = max(len(v_transformed), len(y_i))
-                final_mix = np.pad(v_transformed, (0, max_len - len(v_transformed))) + \
-                            np.pad(y_i, (0, max_len - len(y_i)))
-                
-                # 3. บันทึก
-                output_path = "synapse_master.wav"
-                sf.write(output_path, final_mix, sr)
-                status.update(label="✅ SYNAPSE Engine: สำเร็จ!", state="complete")
+    with c2:
+        st.subheader("🔴 Engine Monitor")
+        if vocal and inst:
+            y_v, sr = librosa.load(vocal, sr=None)
+            st.pyplot(plot_wave(y_v, sr)) # โชว์กราฟเสียงร้อง
             
-            st.audio(output_path)
-            with open(output_path, "rb") as f:
-                st.download_button("📥 ดาวน์โหลด Master (WAV)", f, file_name="synapse_final.wav")
-    else:
-        st.info("💡 กรุณาอัปโหลดทั้งเสียงร้องและดนตรีเพื่อเริ่มทำงาน")
+            if st.button("🚀 EXECUTE RVC CONVERSION"):
+                with st.status("🛠️ กำลังสวมรอยเสียง AI...", expanded=True):
+                    # แปลงและมิกซ์
+                    y_i, _ = librosa.load(inst, sr=sr)
+                    v_ai = librosa.effects.pitch_shift(y_v, sr=sr, n_steps=pitch)
+                    
+                    max_len = max(len(v_ai), len(y_i))
+                    final = np.pad(v_ai, (0, max_len-len(v_ai))) + np.pad(y_i, (0, max_len-len(y_i)))
+                    sf.write("final.wav", final, sr)
+                
+                st.audio("final.wav")
+                st.success("✅ มิกซ์เสียงเสร็จแล้ว ฟังได้เลย!")
+
+with tab2:
+    st.info("🤖 ส่วนของ Gemini AI และ TTS กำลังรอการเชื่อมต่อ API ของคุณ...")
