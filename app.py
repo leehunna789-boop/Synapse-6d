@@ -7,6 +7,24 @@ import torch
 import pickle
 import matplotlib.pyplot as plt
 
+import urllib.request
+
+# ฟังก์ชันแอบดาวน์โหลดโมเดลมาให้ใช้อัตโนมัติ
+def auto_download_model():
+    model_url = "https://huggingface.co/AofHeaD/RVC-Models/resolve/main/Thai_Male_Voice.pth"
+    model_path = "Thai_Male_Voice.pth"
+    
+    if not os.path.exists(model_path):
+        with st.spinner("📦 ระบบกำลังติดตั้ง 'หน้ากากเสียงผู้ชายไทย' ให้คุณฟรี... (รอสักครู่)"):
+            try:
+                urllib.request.urlretrieve(model_url, model_path)
+                st.success("✅ ติดตั้งหน้ากากเสียงสำเร็จ!")
+            except:
+                st.error("❌ ดาวน์โหลดไม่สำเร็จ โปรดเช็คอินเทอร์เน็ต")
+
+# เรียกใช้งานทันที
+auto_download_model()
+
 # --- 1. ตั้งค่าหน้าตาและธีม (Black & Red) ---
 st.set_page_config(page_title="SYNAPSE 6D PRO", layout="wide")
 st.markdown("""
